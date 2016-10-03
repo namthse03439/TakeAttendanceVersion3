@@ -76,19 +76,6 @@ public class MainActivity extends ActionBarActivity {
 
         mExpandableListView = (ExpandableListView) findViewById(R.id.navList);
 
-        // Customize header view
-        LayoutInflater inflater = getLayoutInflater();
-        final View listHeaderView = inflater.inflate(R.layout.nav_header, null, false);
-
-        //+ Update time
-        Calendar cal = Calendar.getInstance();
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd MMM yyyy");
-        String stringTime = simpleDateFormat.format(cal.getTime());
-
-        TextView textTime = (TextView) listHeaderView.findViewById(R.id.date);
-        textTime.setText(stringTime);
-        //- Update time
-
         getStudentInformation();
 
         mExpandableListData = ExpandableListDataSource.getData(this);
@@ -149,6 +136,7 @@ public class MainActivity extends ActionBarActivity {
         else
         {
             fragment = new TakeAttendanceTodayFragment();
+            getSupportActionBar().setSubtitle(getCurrentTime());
         }
 
         FragmentManager fragmentManager = getFragmentManager();
@@ -206,10 +194,6 @@ public class MainActivity extends ActionBarActivity {
 
         timer.start();
 
-        // Customize header view
-        LayoutInflater inflater = getLayoutInflater();
-        final View listHeaderView = inflater.inflate(R.layout.nav_header, null, false);
-
         //+ Update student email
         Preferences.showLoading(this, "Setup", "Loading data from server...");
         SharedPreferences pref = this.getSharedPreferences("ATK_pref", 0);
@@ -226,13 +210,29 @@ public class MainActivity extends ActionBarActivity {
                     timer.cancel();
                     Preferences.dismissLoading();
                     int messageCode = response.code();
-                    GlobalVariable.currentUserProfile = new JSONObject(response.body().string());
+                    if (messageCode == 200)
+                    {
+                        // Customize header view
+                        LayoutInflater inflater = getLayoutInflater();
+                        final View listHeaderView = inflater.inflate(R.layout.nav_header, null, false);
 
-                    TextView email = (TextView) listHeaderView.findViewById(R.id.email);
-                    email.setText(GlobalVariable.currentUserProfile.getString("email"));
+                        //+ Update time
+                        Calendar cal = Calendar.getInstance();
+                        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd MMM yyyy");
+                        String stringTime = simpleDateFormat.format(cal.getTime());
 
-                    mExpandableListView.addHeaderView(listHeaderView);
-                    // Customize header view
+                        TextView textTime = (TextView) listHeaderView.findViewById(R.id.date);
+                        textTime.setText(stringTime);
+                        //- Update time
+
+                        GlobalVariable.currentUserProfile = new JSONObject(URLDecoder.decode( response.body().string(), "UTF-8" ));
+
+                        TextView email = (TextView) listHeaderView.findViewById(R.id.email);
+                        email.setText(GlobalVariable.currentUserProfile.getString("email"));
+
+                        mExpandableListView.addHeaderView(listHeaderView);
+                        // Customize header view
+                    }
                 }
                 catch (Exception e){
                     e.printStackTrace();
@@ -245,6 +245,16 @@ public class MainActivity extends ActionBarActivity {
             }
         });
         //- Update student email
+    }
+
+    private String getCurrentTime()
+    {
+        //+ Update time
+        Calendar cal = Calendar.getInstance();
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd MMM yyyy");
+        String stringTime = simpleDateFormat.format(cal.getTime());
+
+        return stringTime;
     }
 
     private void addDrawerItems() {
@@ -279,26 +289,33 @@ public class MainActivity extends ActionBarActivity {
                         mDrawerLayout.closeDrawer(GravityCompat.START);
                         return false;
                     }
+
+                    getSupportActionBar().setSubtitle(getCurrentTime());
                     fragment = new TakeAttendanceTodayFragment();
-                }
-                else if (groupPosition == 3)
-                {
-                    if (GlobalVariable.isNeededToTraining == true)
-                    {
-                        Notification.showMessage(MainActivity.this, 15);
-                        mDrawerLayout.closeDrawer(GravityCompat.START);
-                        return false;
-                    }
-                    fragment = new ColorInstructionFragment();
-                }
-                else if (groupPosition == 4)
-                {
-                    GlobalVariable.logoutAction(MainActivity.this);
-                    return true;
                 }
                 else
                 {
-                    return false;
+                    getSupportActionBar().setSubtitle("");
+                    if (groupPosition == 3)
+                    {
+                        if (GlobalVariable.isNeededToTraining == true)
+                        {
+                            Notification.showMessage(MainActivity.this, 15);
+                            mDrawerLayout.closeDrawer(GravityCompat.START);
+                            return false;
+                        }
+
+                        fragment = new ColorInstructionFragment();
+                    }
+                    else if (groupPosition == 4)
+                    {
+                        GlobalVariable.logoutAction(MainActivity.this);
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
                 }
 
                 FragmentManager fragmentManager = getFragmentManager();
